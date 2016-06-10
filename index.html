@@ -42,12 +42,16 @@
                   });
 
 
-                  google.maps.event.addListener(marker, 'click', function() {
-                    infowindow.setContent(initialLocation.name);
-                    infowindow.open(map, this);
-                  });
+                  google.maps.event.addListener(marker, 'click', (function(initialLocation) {
+                    return function() {
+                      infowindow.setContent(initialLocation.name);
+                      infowindow.open(map, this);
+                    };
+                  })(initialLocation));
+
                   };
-                };
+                  };
+
 
                 createMarker();
               }
