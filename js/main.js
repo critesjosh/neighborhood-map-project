@@ -1,24 +1,32 @@
 //Model
 
 
-var initialOptions = [
+var initialLocations = [
   {
-    option: 'Meetups',
-    meetupsApiData: {}
+    name: 'Belle Isle',
+    location: {lat: 42.343252, lng: -82.9745114}
   },
   {
-    option: 'Wikipedia',
-    wikipediaApiData: {}
+    name: 'The Heidelberg Project',
+    location: {lat: 42.358652, lng: -83.0209799}
   },
   {
-    option: 'Foursquare'
+    name: 'Kings Books',
+    location: {lat: 42.3275032, lng: -83.0571634}
   },
   {
-    option: 'Yelp'
+    name: 'Detroit Public Library',
+    location: {lat: 42.3340067, lng: -83.0468543}
+  },
+  {
+    name: 'Detroit Institute of Arts',
+    location: {lat: 42.3594349, lng: -83.0645227}
   }
 ]
 
-//Meetup AJAX request
+var initialOptions = []
+
+/*//Meetup AJAX request
 var meetupUrl = "https://api.meetup.com/find/groups?key=1b301d2714a753518795772603ef2e&sign=true&photo-host=public&location=detroit&order=distance&page=10";
 
 $.ajax({
@@ -27,12 +35,12 @@ $.ajax({
 }).done(function(data){
       meetupGroups = data.data;
       console.log(meetupGroups);
-      initialOptions.meetupsApiData.push(meetupGroups);
+      initialOptions.meetups.push(meetupGroups);
       for (var i = 0; i < meetupGroups.length; i++) {
         var meetupGroup = meetupGroups[i];
       };
     });
-console.log(initialOptions.meetupsApiData);
+
 
 //Wikipedia AJAX request
 
@@ -45,10 +53,11 @@ $.ajax({
     initialOptions.wikipediaApiData = data;
   });
 
-
+*/
 
 var Option = function(data) {
   this.option = ko.observable(data.option);
+  this.apiList = ko.observableArray(data.apiList);
 }
 
 var ViewModel = function () {
