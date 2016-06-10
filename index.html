@@ -1,34 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title>Detroit Neighborhood Map</title>
     <meta name="viewport" content="initial-scale=1.0">
     <meta charset="utf-8">
-    <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      #map {
-        height: 100%;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
+    <div id="left-column">
+      <input id="search" data-bind="textInput: search" type="text" value="">
+      <button id="filter"
 
+      <ul id="options-list" data-bind="foreach: optionList">
+        <li id="options" data-bind="text: option, click: $parent.optionChange"></li>
+      </ul>
 
+    </div>
     <div id="map"></div>
     <script>
+
           var map;
+          var detroit = {lat: 42.3314, lng: -83.0458};
+          var infowindow;
+          var service;
+
           function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
-              center: {lat: 42.3314, lng: -83.0458},
+              center: detroit,
               zoom: 12
             });
-          }
+
+            var request = {
+                location: detroit,
+                radius: '500',
+                query: 'restaurant'
+              };
+              infowindow = new google.maps.InfoWindow();
+              service = new google.maps.places.PlacesService(map);
+              service.textSearch(request, callback);
+
+              function callback(results, status) {
+                if (status == google.maps.places.PlacesServiceStatus.OK) {
+                  for (var i = 0; i < results.length; i++) {
+                  var place = results[i];
+                  createMarker(results[i]);
+                  }
+                }
+              };
+
+              function createMarker(place) {
+                var placeLoc = place.geometry.location;
+                var marker = new google.maps.Marker({
+                map: map,
+                position: place.geometry.location
+                });
+
+                var request = { reference: place.reference };
+                service.getDetails(request, function(details, status) {
+                  google.maps.event.addListener(marker, 'click', function() {
+                    infowindow.setContent(details.name + "<br />" + details.formatted_address +"<br />" + details.website + "<br />" + details.rating + "<br />" + details.formatted_phone_number);
+                    infowindow.open(map, this);
+                  });
+                });
+              }
+
+
+            }
+
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA4Uyy2Sf98wBO1CkN4uswWeK1qawD95rs&callback=initMap"
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/knockout/dist/knockout.js"></script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA4Uyy2Sf98wBO1CkN4uswWeK1qawD95rs&libraries=places&callback=initMap"
     async defer></script>
+    <script src="js/main.js"></script>
   </body>
 </html>
