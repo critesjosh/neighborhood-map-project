@@ -28,40 +28,6 @@ var initialLocations = [
   }
 ]
 
-var meetupLocations = ko.observableArray([]);
-
-var meetupInfo = function(meetupObject) {
-  var self = meetupObject;
-  var location = self.location();
-  console.log(location);
-  
-};
-
-//find Meetups button
-var findMeetups = function() {
-
-//Meetup AJAX request
-var meetupUrl = "https://api.meetup.com/find/groups?key=1b301d2714a753518795772603ef2e&sign=true&photo-host=public&location=detroit&order=distance&page=10";
-
-$.ajax({
-  url: meetupUrl,
-  dataType: 'jsonp'
-}).done(function(data){
-      meetupGroups = data.data;
-      console.log(meetupGroups);
-      meetupGroups.forEach(function (data){
-        meetupLocations.push( new MeetupLocation (data));
-      });
-    });
-
-    $("#meetup-locations").show();
-}
-
-var hideMeetups = function () {
-  console.log('hi');
-  $("#meetup-locations").hide();
-}
-
 /*
 //Wikipedia AJAX request
 
@@ -76,35 +42,46 @@ $.ajax({
 */
 
 
-var Location = function(data) {
-  this.name = ko.observable(data.name);
-  this.location = ko.observable(data.location);
-  this.selected = ko.observable(false);
-}
+var Location = function(data, comingFrom) {
 
-var MeetupLocation = function(data) {
-  this.source = 'meetup';
+  if (data.location){
+    var location = data.location;
+  } else {
+    var latitude = data.lat;
+    var longitude = data.lon;
+    location = {'lat': latitude, 'lon': longitude};
+  };
+  this.source = ko.observable(comingFrom);
   this.name = ko.observable(data.name);
-  var latitude = data.lat;
-  var longitude = data.lon;
-  this.location = ko.observable({'lat': latitude, 'long': longitude});
+  this.location = ko.observable(location);
+  this.selected = ko.observable(false);
 }
 
 var ViewModel = function (data) {
   var self = this;
+  this.locationsList = ko.observableArray([]);
 
 //intial locations information
   this.initialLocationsList = ko.observableArray([]);
 
   initialLocations.forEach(function(data){
-    self.initialLocationsList.push( new Location(data) );
+    self.locationsList.push( new Location(data, 'initial') );
+  });
+  initialLocations.forEach(function(data){
+    self.initialLocationsList.push( new Location(data, 'initial') );
   });
 
-  this.currentLocation = ko.observable( this.initialLocationsList() );
+  this.currentLocation = ko.observable( this.locationsList() );
 
   this.locationChange = function(place) {
+    //this code unselects the previous items
+    for (var i = 0; i < self.locationsList().length; i++){
+      var item = self.locationsList()[i];
+      item.selected(false);
+    };
     var name = place.name();
     var location = place.location();
+    place.selected(true);
     self.currentLocation(place);
 
     var infowindow = new google.maps.InfoWindow({
@@ -116,14 +93,42 @@ var ViewModel = function (data) {
     infowindow.open(map, this.currentLocation);
   };
 
-  this.selected = function(object) {
-    $(object).addClass('selected');
-    console.log(object);
+//meetup information
+  this.meetupLocations = ko.observableArray([]);
+
+  this.meetupInfo = function(meetupObject) {
+    var self = meetupObject;
+    var location = self.location();
+    console.log(meetupObject);
+  };
+
+  this.findMeetups = function() {
+  //Meetup AJAX request
+    var meetupUrl = "https://api.meetup.com/find/groups?key=1b301d2714a753518795772603ef2e&sign=true&photo-host=public&location=detroit&order=distance&page=10";
+
+    $.ajax({
+      url: meetupUrl,
+      dataType: 'jsonp'
+    }).done(function(data){
+          meetupGroups = data.data;
+          meetupGroups.forEach(function (data){
+            self.locationsList.push( new Location (data, 'meetup'));
+          });
+          meetupGroups.forEach(function (data){
+            self.meetupLocations.push( new Location (data, 'meetup'));
+          });
+        });
+        $("#meetup-locations").show();
   }
 
-//meetup information
-//  this.meetupLocationsList = ko.observableArray([]);
+  this.hideMeetups = function () {
+      $("#meetup-locations").hide();
+  }
+//code to make the filter work
 
+  this.filterMarkers = function () {
+
+    }
 }
 
 ko.applyBindings(new ViewModel());
