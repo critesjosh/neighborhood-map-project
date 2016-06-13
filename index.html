@@ -8,13 +8,24 @@
   </head>
   <body>
     <div id="left-column">
-      <input id="search" data-bind="textInput: search" type="text" value="">
-      <button id="filter"
+      
+      <h2 id="initial-locations-header">Stuff in Detroit</h2>
+      <ul id="inital-locations" data-bind="foreach: initialLocationsList">
+        <li id="initial-location" data-bind="text: name, click: $parent.locationChange, click: $parent.selected"></li>
+      </ul>
 
+      <h2 id="meetup-locations-header"><a href="http://www.meetup.com/">Meetups</a> in Detroit</h2>
+      <button id="find-meetups" data-bind="click: findMeetups">Find Meetups</button>
+      <button id="hide-meetups" data-bind="click: hideMeetups">Hide Meetups</button>
+      <ul id="meetup-locations" data-bind="foreach: meetupLocations">
+        <li id="meetup-location" data-bind="text: name, click: meetupInfo"></li>
+      </ul>
+
+<!--
       <ul id="options-list" data-bind="foreach: optionList">
         <li id="options" data-bind="text: option, click: $parent.optionChange"></li>
       </ul>
-
+-->
     </div>
     <div id="map"></div>
     <script>
