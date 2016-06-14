@@ -23,6 +23,7 @@ button {
 
 .selected {
   font-style: italic;
+  background: white;
 }
 
 #search {

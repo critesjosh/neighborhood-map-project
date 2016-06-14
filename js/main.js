@@ -57,18 +57,18 @@ var Location = function(data, comingFrom) {
   this.selected = ko.observable(false);
 }
 
-var ViewModel = function (data) {
+var ViewModel = function () {
   var self = this;
   this.locationsList = ko.observableArray([]);
-
+  self.infowindows = [];
 //intial locations information
   this.initialLocationsList = ko.observableArray([]);
 
   initialLocations.forEach(function(data){
-    self.locationsList.push( new Location(data, 'initial') );
+    self.locationsList.push( new Location(data, 0) );
   });
   initialLocations.forEach(function(data){
-    self.initialLocationsList.push( new Location(data, 'initial') );
+    self.initialLocationsList.push( new Location(data, 0) );
   });
 
   this.currentLocation = ko.observable( this.locationsList() );
@@ -79,18 +79,28 @@ var ViewModel = function (data) {
       var item = self.locationsList()[i];
       item.selected(false);
     };
+
+    //closes all info windows
+    var closeAllInfoWindows = function () {
+      for (var i = 0; i < self.infowindows.length; i++){
+        self.infowindows[i].close();
+      }
+    };
+    closeAllInfoWindows();
+
     var name = place.name();
     var location = place.location();
     place.selected(true);
     self.currentLocation(place);
-
+    //opens info window for the selected location
     var infowindow = new google.maps.InfoWindow({
       content: name,
       position: location
     });
-
+    self.infowindows.push(infowindow);
     infowindow.setContent(name);
     infowindow.open(map, this.currentLocation);
+    console.log(self.currentLocation().name());
   };
 
 //meetup information
@@ -110,6 +120,7 @@ var ViewModel = function (data) {
       url: meetupUrl,
       dataType: 'jsonp'
     }).done(function(data){
+      if(self.meetupLocations().length < 10){   //only adds new locations if the function has not yet been called
           meetupGroups = data.data;
           meetupGroups.forEach(function (data){
             self.locationsList.push( new Location (data, 'meetup'));
@@ -117,7 +128,8 @@ var ViewModel = function (data) {
           meetupGroups.forEach(function (data){
             self.meetupLocations.push( new Location (data, 'meetup'));
           });
-        });
+        };
+      });
         $("#meetup-locations").show();
   }
 
@@ -125,9 +137,12 @@ var ViewModel = function (data) {
       $("#meetup-locations").hide();
   }
 //code to make the filter work
-
+  //this reads the text in the box
+  this.filterText = ko.observable("filter");
+  //this function is called by the filter button, reading the filterText
   this.filterMarkers = function () {
-
+      var text = self.filterText();
+      console.log(text);
     }
 }
 
