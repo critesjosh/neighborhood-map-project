@@ -55,15 +55,17 @@ var Location = function(data, comingFrom) {
   this.name = ko.observable(data.name);
   this.location = ko.observable(location);
   this.selected = ko.observable(false);
+  this.visible = ko.observable(true);
 }
 
 var ViewModel = function () {
+
   var self = this;
   this.locationsList = ko.observableArray([]);
-  self.infowindows = [];
+  this.markers = ko.observableArray([]);
 
+//  self.infowindows = [];
 //intial locations information
-
   initialLocations.forEach(function(data){
     self.locationsList.push( (new Location(data, 0)) );
   });
@@ -79,9 +81,9 @@ var ViewModel = function () {
 
     //closes all info windows
     var closeAllInfoWindows = function () {
-      for (var i = 0; i < self.infowindows.length; i++){
-        self.infowindows[i].close();
-      }
+      for (var i = 0; i < infowindows.length; i++){
+        infowindows[i].close();
+      };
     };
     closeAllInfoWindows();
 
@@ -94,7 +96,7 @@ var ViewModel = function () {
       content: name,
       position: location
     });
-    self.infowindows.push(infowindow);
+    infowindows.push(infowindow);
     infowindow.setContent(name);
     infowindow.open(map, this.currentLocation);
   };
@@ -105,7 +107,6 @@ var ViewModel = function () {
   this.meetupInfo = function(meetupObject) {
     var self = meetupObject;
     var location = self.location();
-    console.log(meetupObject);
   };
 
   this.findMeetups = function() {
@@ -132,36 +133,56 @@ var ViewModel = function () {
 
   this.hideMeetups = function () {
       $("#meetup-locations").hide();
+      console.log(self.filteredItems());
+      console.log(self.filteredMarkers().length);
   }
 //code to make the filter work
   //this reads the text in the box
   this.filter = ko.observable("");
 
-  this.filteredItems = ko.computed( function() {
-    var stringStartsWith = function (string, startsWith) {
-      string = string || "";
-      if (startsWith.length > string.length)
-          return false;
-          return string.substring(0, startsWith.length) === startsWith;
-        };
+  this.stringStartsWith = function (string, startsWith) {
+    string = string || "";
+    if (startsWith.length > string.length)
+        return false;
+        return string.substring(0, startsWith.length) === startsWith;
+      };
 
+  this.filteredItems = ko.computed( function() {
+
+    //this code read the filter box and filters the list
     var filter = self.filter().toLowerCase();
     if (!filter) {
       return self.locationsList();
     } else {
       var filtered = ko.utils.arrayFilter(self.locationsList(), function(item){
-        return stringStartsWith(item.name().toLowerCase(), filter);
+        return self.stringStartsWith(item.name().toLowerCase(), filter);
       });
-      console.log(filtered);
       return filtered;
     };
   });
 
+  //this function is called as the filter textbox is updated to update the markers
+  this.filteredMarkers = ko.computed(function() {
+      var filter = self.filter().toLowerCase();
+        if (!filter) {
+          //if there is no filter, then return the whole list
+          return markers();
+          } else {
+          var search = ko.utils.arrayFilter(markers(), function(item) {
+            return self.stringStartsWith(item.title.toLowerCase(), filter);
+/*            var string = item.title.toLowerCase();
+               var search = string.search(filter) >= 0;
+               if (search = true) {
+                  item.setVisible(true);
+               } else {
+                   item.setVisible(false);
+                 };       */
+               });
+               return search;
+              };
+    });
 
-
-  //this function is called by the filter button, reading the filterText
-  this.filterMarkers = function () {
-    }
 }
+
 
 ko.applyBindings(new ViewModel());
