@@ -26,6 +26,10 @@ button {
   background: white;
 }
 
+.hidemeetup {
+  display: none;
+}
+
 #search {
   display: flex;
 

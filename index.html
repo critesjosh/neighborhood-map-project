@@ -9,12 +9,11 @@
   <body>
     <div id="left-column">
 
-      <input id="filter" type="text" data-bind="textInput: filterText">
-      <button id="filter-button" data-bind="click: filterMarkers">Filter</button>
+      <input id="filter" type="text" data-bind="textInput: filter" />
 
       <h2 id="initial-locations-header">Stuff in Detroit</h2>
-      <ul id="inital-locations" data-bind="foreach: locationsList">
-        <li id="initial-location" data-bind="css: { selected: selected() }, text: name, click: $parent.locationChange"></li>
+      <ul id="inital-locations" data-bind="foreach: filteredItems">
+        <li id="initial-location" data-bind="css: { selected: selected()}, text: name, click: $parent.locationChange"></li>
       </ul>
 
       <h2 id="meetup-locations-header"><a href="http://www.meetup.com/">Meetups</a> in Detroit</h2>

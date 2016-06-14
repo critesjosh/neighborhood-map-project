@@ -61,14 +61,11 @@ var ViewModel = function () {
   var self = this;
   this.locationsList = ko.observableArray([]);
   self.infowindows = [];
+
 //intial locations information
-  this.initialLocationsList = ko.observableArray([]);
 
   initialLocations.forEach(function(data){
-    self.locationsList.push( new Location(data, 0) );
-  });
-  initialLocations.forEach(function(data){
-    self.initialLocationsList.push( new Location(data, 0) );
+    self.locationsList.push( (new Location(data, 0)) );
   });
 
   this.currentLocation = ko.observable( this.locationsList() );
@@ -100,7 +97,6 @@ var ViewModel = function () {
     self.infowindows.push(infowindow);
     infowindow.setContent(name);
     infowindow.open(map, this.currentLocation);
-    console.log(self.currentLocation().name());
   };
 
 //meetup information
@@ -129,6 +125,7 @@ var ViewModel = function () {
             self.meetupLocations.push( new Location (data, 'meetup'));
           });
         };
+        console.log(self.meetupLocations());
       });
         $("#meetup-locations").show();
   }
@@ -138,11 +135,32 @@ var ViewModel = function () {
   }
 //code to make the filter work
   //this reads the text in the box
-  this.filterText = ko.observable("filter");
+  this.filter = ko.observable("");
+
+  this.filteredItems = ko.computed( function() {
+    var stringStartsWith = function (string, startsWith) {
+      string = string || "";
+      if (startsWith.length > string.length)
+          return false;
+          return string.substring(0, startsWith.length) === startsWith;
+        };
+
+    var filter = self.filter().toLowerCase();
+    if (!filter) {
+      return self.locationsList();
+    } else {
+      var filtered = ko.utils.arrayFilter(self.locationsList(), function(item){
+        return stringStartsWith(item.name().toLowerCase(), filter);
+      });
+      console.log(filtered);
+      return filtered;
+    };
+  });
+
+
+
   //this function is called by the filter button, reading the filterText
   this.filterMarkers = function () {
-      var text = self.filterText();
-      console.log(text);
     }
 }
 

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-
+    <input id="filter" type="text" data-bind="textInput: filter" />
     <ul id="locations" data-bind="foreach: locationsList">
       <li id="initial-location" data-bind="text: name"></li>
     </ul>
