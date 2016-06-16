@@ -18,6 +18,20 @@
       <button id="test-button" data-bind="click: test">Test</button>
       <button id="foursquare-button">Get Foursquare Info</button>
 
+      <div id="yelp">
+        <h2 id="yelp-header">Yelp ME!</h2>
+        <p> Yelp Search Term:<input id="yelp-search-term" type="text" data-bind:"value: yelpSearchTerm" /></p>
+        <p> Location:<input id="yelp-search-location" type="text" data-bind:"value: yelpSearchLocation" /></p>
+        <button id="yelp-button" data-bind="click: getYelpData">Search</button>
+      </div>
+
+      <div id="foursquare">
+        <h2 id="foursquare-header">Foursquare Here!</h2>
+        <p> Foursquare Search Term:<input id="foursquare-search-term" type="text" data-bind:"value: foursquareSearchTerm" /></p>
+        <p> Location:<input id="foursquare-search-location" type="text" data-bind:"value: foursquareSearchLocation" /></p>
+        <button id="foursquare-button" data-bind="click: getFoursquareData">Search</button>
+      </div>
+
     </div>
     <div id="map"></div>
     <script src="bower_components/jquery/dist/jquery.min.js"></script>

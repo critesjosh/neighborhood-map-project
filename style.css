@@ -17,6 +17,10 @@ li {
   border: 1px black;
 }
 
+input {
+  background: orange;
+}
+
 .hide {
   display: none;
 }
@@ -27,6 +31,14 @@ li {
   float: left;
   background-color: gray;
   height: 100%;
+}
+
+#yelp {
+  background: pink;
+}
+
+#foursquare {
+  background: lightblue;
 }
 
 .selected {

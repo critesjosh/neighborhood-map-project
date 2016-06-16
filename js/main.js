@@ -5,6 +5,7 @@ var detroit = {lat: 42.3314, lng: -83.0458};
 var infowindow;
 var infowindows = [];
 var markers = ko.observableArray([]);
+var locationsList = ko.observableArray([]);
 
 function initMap(){
     map = new google.maps.Map(document.getElementById("map"), {
@@ -14,8 +15,8 @@ function initMap(){
   infowindow = new google.maps.InfoWindow();
 
   function createMarker() {
-    for (var i = 0; i < initialLocations.length; i++ ){
-      var initialLocation = initialLocations[i];
+    for (var i = 0; i < locationsList().length; i++ ){
+      var initialLocation = locationsList()[i];
       var placeLoc = initialLocation.location;
       var marker = new google.maps.Marker({
       map: map,
@@ -27,15 +28,19 @@ function initMap(){
 
       google.maps.event.addListener(marker, 'click', (function(initialLocation) {
         var name = initialLocation.name;
+        var rating = initialLocation.rating;
         return function() {
           closeAllInfoWindows();
-          infowindow.setContent(name);
+          deselectAll();
+          initialLocation.selected(true);
+          var contentString = '<p><b>' + name + '</b></br><p>Rating: ' + rating + '/10</p>';
+          infowindow.setContent(contentString);
           infowindow.open(map, this);
           infowindows.push(infowindow);
         };
       })(initialLocation));
 
-      };
+        };
       };
 
     createMarker();
@@ -55,6 +60,15 @@ var closeAllInfoWindows = function () {
         };
       };
       closeAllInfoWindows();
+
+//deselect all items
+deselectAll = function() {
+  //this code unselects the previous items
+  for (var i = 0; i < locationsList().length; i++){
+    var item = self.locationsList()[i];
+    item.selected(false);
+  };
+}
 
 var initialLocations = [
   {
@@ -102,7 +116,6 @@ $.ajax({
   });
 */
 
-
 var Location = function(data, comingFrom) {
 
   this.source = comingFrom;
@@ -114,36 +127,33 @@ var Location = function(data, comingFrom) {
 var ViewModel = function () {
 
   var self = this;
-  this.locationsList = ko.observableArray([]);
 
-//  self.infowindows = [];
 //intial locations information
   initialLocations.forEach(function(data){
-    self.locationsList.push( (new Location(data, 0)) );
+    locationsList.push( (new Location(data, 0)) );
   });
 
-  this.currentLocation = ko.observable( this.locationsList() );
+  this.currentLocation = ko.observable( locationsList() );
 
   this.locationChange = function(place) {
-    //this code unselects the previous items
-    for (var i = 0; i < self.locationsList().length; i++){
-      var item = self.locationsList()[i];
-      item.selected(false);
-    };
+
+    deselectAll();
 
     closeAllInfoWindows();
 
     var name = place.name;
     var location = place.location;
+    var rating = place.rating;
     place.selected(true);
     self.currentLocation(place);
     //opens info window for the selected location
+    var contentString = '<p><b>' + name + '</b></br><p>Rating: ' + rating + '/10</p>';
     var infowindow = new google.maps.InfoWindow({
       content: name,
       position: location
     });
     infowindows.push(infowindow);
-    infowindow.setContent(name);
+    infowindow.setContent(contentString);
     infowindow.open(map, this.currentLocation);
   };
 
@@ -154,10 +164,11 @@ var ViewModel = function () {
   this.filteredItems = ko.computed( function() {
     //this code read the filter box and filters the list
     var filter = self.filter().toLowerCase();
+    deselectAll()
     if (!filter) {
-      return self.locationsList();
+      return locationsList();
     } else {
-      var filtered = ko.utils.arrayFilter(self.locationsList(), function(item){
+      var filtered = ko.utils.arrayFilter(locationsList(), function(item){
         return stringStartsWith(item.name.toLowerCase(), filter);
       });
       return filtered;
@@ -189,15 +200,83 @@ var ViewModel = function () {
     });
 
     this.test = function() {
-
+console.log(locationsList()[0].rating);
     }
 
-//Foursquare AJAX request
-/*
-self.placesArray().forEach(function(place) {
-    $.getJSON('https://api.foursquare.com/v2/venues/'+ detroit + '?client_id=J5B15DIFBQULDELDRC00BET5PTEUKTEFUMFDZ5HAYSY2P33R&client_secret=XIH1G3153DXNXBNSEFUEHFCPTMY0YVAGK5LWGZJQOQFQKLMY&v=20130815&ll=37.7,-122'
+//Yelp AJAX stuff
 
-});
+var yelpSearchTerm = ko.observable("");
+var yelpSearchLocation = ko.observable("");
+
+
+/*
+API v2.0
+Consumer Key	N2ke23vHS5X3ZHlqCiTSSA
+Consumer Secret	2UVQ_Kp1txNmCwcZqdej2ZBJCAs
+Token	v8qxg-WjwDmfM931BonIGbaMWyxJaUXZ
+Token Secret	-BUZf7Jbqbi-XSvdrLdakxdLu0g
 */
+
+this.getYelpData = function() {
+
+  function nonce_generate() {
+    return (Math.floor(Math.random() * 1e12).toString());
+  }
+
+  var parameters = {
+    oauth_consumer_key: 'N2ke23vHS5X3ZHlqCiTSSA',
+    oauth_token: 'v8qxg-WjwDmfM931BonIGbaMWyxJaUXZ',
+    oauth_nonce: nonce_generate(),
+    oauth_timestamp: Math.floor(Date.now()/1000),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_version : '1.0',
+    callback: 'cb'
+  }
+
+  var encodedSignature = oauthSignature.generate('GET',yelp_url, parameters, YELP_KEY_SECRET, YELP_TOKEN_SECRET);
+    parameters.oauth_signature = encodedSignature;
+
+  var yelpUrl = "https://api.yelp.com/v2/search?term=food&location=San+Francisco"
+  $.ajax({
+    url: yelpUrl,
+//    url: 'https://api.yelp.com/v2/search?term=' + yelpSearchTerm + '&location=' + yelpSearchLocation + '',
+    dataType: 'jsonp',
+    cache: true,
+    data: parameters
+  }).done(function(data){
+    console.log(data);
+  }).fail(function(){
+    $('#yelp-header').text("Yelp results could not be loaded :(");
+  });
+}
+
+
+//Foursquare AJAX request
+  locationsList().forEach(function(item){
+    $.ajax({
+      url: 'https://api.foursquare.com/v2/venues/explore',
+      dataType: 'json',
+      data: 'limit=1&ll='+item.location.lat+','+item.location.lng+ '&query=' + item.name +'&client_id=B3Q0KONKTC0PX2F52YNXPOIYYCEN4AH23UNDTNGEYDBJ522S&client_secret=LY2WFGMIRHO5Q2T4XVOCGOZMOFO5NFVBTEOI4WIWBYUCU3O2&v=20160616',
+      async: true}).done(function(data) {
+        item.rating = data.response.groups[0].items[0].venue.rating;
+    });
+  })
+/*
+this.foursquareSearchTerm = ko.observable("");
+this.foursquareSearchLocation = ko.observable("");
+var foursquareSearchTerm = this.foursquareSearchTerm();
+var foursquareSearchLocation = this.foursquareSearchLocation();
+
+this.getFoursquareData = function(foursquareSearchTerm, foursquareSearchLocation) {
+  console.log(foursquareSearchTerm);
+  $.ajax({
+    url: 'https://api.foursquare.com/v2/venues/search?query=' + foursquareSearchTerm + '&near=' + foursquareSearchLocation + '&client_id=B3Q0KONKTC0PX2F52YNXPOIYYCEN4AH23UNDTNGEYDBJ522S&client_secret=LY2WFGMIRHO5Q2T4XVOCGOZMOFO5NFVBTEOI4WIWBYUCU3O2&v=20160616'
+  }).done(function(data){
+    console.log(data);
+  }).fail(function(){
+    $('#foursquare-header').text("Fourquare results could not be loaded :(")
+  })
+}*/
+
 }
 ko.applyBindings(new ViewModel());
