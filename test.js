@@ -55,3 +55,44 @@ function ViewModel() {
 }
 
 ko.applyBindings( new ViewModel() );
+
+
+
+//meetup information
+  this.meetupLocations = ko.observableArray([]);
+
+  this.meetupInfo = function(meetupObject) {
+    var self = meetupObject;
+    var location = self.location();
+  };
+
+  this.findMeetups = function() {
+  //Meetup AJAX request
+    var meetupUrl = "https://api.meetup.com/find/groups?key=1b301d2714a753518795772603ef2e&sign=true&photo-host=public&location=detroit&order=distance&page=10";
+
+    $.ajax({
+      url: meetupUrl,
+      dataType: 'jsonp'
+    }).done(function(data){
+      if(self.meetupLocations().length < 10){   //only adds new locations if the function has not yet been called
+          meetupGroups = data.data;
+          meetupGroups.forEach(function (data){
+            self.locationsList.push( new Location (data, 'meetup'));
+          });
+          meetupGroups.forEach(function (data){
+            self.meetupLocations.push( new Location (data, 'meetup'));
+          });
+        };
+        console.log(self.meetupLocations());
+      });
+        $("#meetup-locations").show();
+  }
+
+  this.hideMeetups = function () {
+      $("#meetup-locations").hide();
+
+      console.log(self.filteredItems());
+      console.log(markers().visible);
+      console.log(self.filteredMarkers());
+
+  }

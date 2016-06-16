@@ -1,30 +1,91 @@
 //Model
 
+var map;
+var detroit = {lat: 42.3314, lng: -83.0458};
+var infowindow;
+var infowindows = [];
+var markers = ko.observableArray([]);
+
+function initMap(){
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: detroit,
+      zoom: 12});
+
+  infowindow = new google.maps.InfoWindow();
+
+  function createMarker() {
+    for (var i = 0; i < initialLocations.length; i++ ){
+      var initialLocation = initialLocations[i];
+      var placeLoc = initialLocation.location;
+      var marker = new google.maps.Marker({
+      map: map,
+      position: placeLoc,
+      title: initialLocation.name,
+      visible: true
+      });
+      markers.push(marker);
+
+      google.maps.event.addListener(marker, 'click', (function(initialLocation) {
+        var name = initialLocation.name;
+        return function() {
+          closeAllInfoWindows();
+          infowindow.setContent(name);
+          infowindow.open(map, this);
+          infowindows.push(infowindow);
+        };
+      })(initialLocation));
+
+      };
+      };
+
+    createMarker();
+  }
+
+var stringStartsWith = function (string, startsWith) {
+    string = string || "";
+    if (startsWith.length > string.length)
+        return false;
+        return string.substring(0, startsWith.length) === startsWith;
+      };
+
+//closes all info windows
+var closeAllInfoWindows = function () {
+    for (var i = 0; i < infowindows.length; i++){
+      infowindows[i].close();
+        };
+      };
+      closeAllInfoWindows();
+
 var initialLocations = [
   {
     name: 'Belle Isle',
     location: {lat: 42.343252, lng: -82.9745114},
-    source: 'initial'
+    source: 'initial',
+    visible: 'true'
   },
   {
     name: 'The Heidelberg Project',
     location: {lat: 42.358652, lng: -83.0209799},
-    source: 'initial'
+    source: 'initial',
+    visible: 'true'
   },
   {
     name: 'Kings Books',
     location: {lat: 42.3275032, lng: -83.0571634},
-    source: 'initial'
+    source: 'initial',
+    visible: 'true'
   },
   {
     name: 'Detroit Public Library',
     location: {lat: 42.3340067, lng: -83.0468543},
-    source: 'initial'
+    source: 'initial',
+    visible: 'true'
   },
   {
     name: 'Detroit Institute of Arts',
     location: {lat: 42.3594349, lng: -83.0645227},
-    source: 'initial'
+    source: 'initial',
+    visible: 'true'
   }
 ]
 
@@ -44,25 +105,16 @@ $.ajax({
 
 var Location = function(data, comingFrom) {
 
-  if (data.location){
-    var location = data.location;
-  } else {
-    var latitude = data.lat;
-    var longitude = data.lon;
-    location = {'lat': latitude, 'lon': longitude};
-  };
-  this.source = ko.observable(comingFrom);
-  this.name = ko.observable(data.name);
-  this.location = ko.observable(location);
+  this.source = comingFrom;
+  this.name = data.name;
+  this.location = data.location;
   this.selected = ko.observable(false);
-  this.visible = ko.observable(true);
 }
 
 var ViewModel = function () {
 
   var self = this;
   this.locationsList = ko.observableArray([]);
-  this.markers = ko.observableArray([]);
 
 //  self.infowindows = [];
 //intial locations information
@@ -79,16 +131,10 @@ var ViewModel = function () {
       item.selected(false);
     };
 
-    //closes all info windows
-    var closeAllInfoWindows = function () {
-      for (var i = 0; i < infowindows.length; i++){
-        infowindows[i].close();
-      };
-    };
     closeAllInfoWindows();
 
-    var name = place.name();
-    var location = place.location();
+    var name = place.name;
+    var location = place.location;
     place.selected(true);
     self.currentLocation(place);
     //opens info window for the selected location
@@ -101,61 +147,18 @@ var ViewModel = function () {
     infowindow.open(map, this.currentLocation);
   };
 
-//meetup information
-  this.meetupLocations = ko.observableArray([]);
-
-  this.meetupInfo = function(meetupObject) {
-    var self = meetupObject;
-    var location = self.location();
-  };
-
-  this.findMeetups = function() {
-  //Meetup AJAX request
-    var meetupUrl = "https://api.meetup.com/find/groups?key=1b301d2714a753518795772603ef2e&sign=true&photo-host=public&location=detroit&order=distance&page=10";
-
-    $.ajax({
-      url: meetupUrl,
-      dataType: 'jsonp'
-    }).done(function(data){
-      if(self.meetupLocations().length < 10){   //only adds new locations if the function has not yet been called
-          meetupGroups = data.data;
-          meetupGroups.forEach(function (data){
-            self.locationsList.push( new Location (data, 'meetup'));
-          });
-          meetupGroups.forEach(function (data){
-            self.meetupLocations.push( new Location (data, 'meetup'));
-          });
-        };
-        console.log(self.meetupLocations());
-      });
-        $("#meetup-locations").show();
-  }
-
-  this.hideMeetups = function () {
-      $("#meetup-locations").hide();
-      console.log(self.filteredItems());
-      console.log(self.filteredMarkers().length);
-  }
 //code to make the filter work
   //this reads the text in the box
   this.filter = ko.observable("");
 
-  this.stringStartsWith = function (string, startsWith) {
-    string = string || "";
-    if (startsWith.length > string.length)
-        return false;
-        return string.substring(0, startsWith.length) === startsWith;
-      };
-
   this.filteredItems = ko.computed( function() {
-
     //this code read the filter box and filters the list
     var filter = self.filter().toLowerCase();
     if (!filter) {
       return self.locationsList();
     } else {
       var filtered = ko.utils.arrayFilter(self.locationsList(), function(item){
-        return self.stringStartsWith(item.name().toLowerCase(), filter);
+        return stringStartsWith(item.name.toLowerCase(), filter);
       });
       return filtered;
     };
@@ -167,22 +170,34 @@ var ViewModel = function () {
         if (!filter) {
           //if there is no filter, then return the whole list
           return markers();
-          } else {
-          var search = ko.utils.arrayFilter(markers(), function(item) {
-            return self.stringStartsWith(item.title.toLowerCase(), filter);
-/*            var string = item.title.toLowerCase();
-               var search = string.search(filter) >= 0;
-               if (search = true) {
-                  item.setVisible(true);
-               } else {
-                   item.setVisible(false);
-                 };       */
+        } else {
+          return ko.utils.arrayFilter(markers(), function(item) {
+             return stringStartsWith(item.title.toLowerCase(), filter);
                });
-               return search;
               };
     });
 
+    //turns off markers not being filtered, turns on markers that return true
+    this.displayMarkers = ko.computed(function() {
+      closeAllInfoWindows();
+      for( i = 0; i < markers().length; i++){
+        markers()[i].setVisible(false);
+      };
+      for( i = 0; i < self.filteredMarkers().length; i++){
+        self.filteredMarkers()[i].setVisible(true);
+      }
+    });
+
+    this.test = function() {
+
+    }
+
+//Foursquare AJAX request
+/*
+self.placesArray().forEach(function(place) {
+    $.getJSON('https://api.foursquare.com/v2/venues/'+ detroit + '?client_id=J5B15DIFBQULDELDRC00BET5PTEUKTEFUMFDZ5HAYSY2P33R&client_secret=XIH1G3153DXNXBNSEFUEHFCPTMY0YVAGK5LWGZJQOQFQKLMY&v=20130815&ll=37.7,-122'
+
+});
+*/
 }
-
-
 ko.applyBindings(new ViewModel());
