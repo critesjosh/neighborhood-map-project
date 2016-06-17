@@ -6,6 +6,10 @@ var infowindow;
 var infowindows = [];
 var markers = ko.observableArray([]);
 var locationsList = ko.observableArray([]);
+var contentString = function(data){
+  return '<p><b>' + data.name + '</b></br><p>Rating: ' + data.rating + '/10</br>from foursquare.com</p>' +
+'Wikipedia Info: ' + data.wikiLink + '</br></br>Flickr Photo:</br>' + data.photo;
+}
 
 function initMap(){
     map = new google.maps.Map(document.getElementById("map"), {
@@ -24,6 +28,7 @@ function initMap(){
       title: initialLocation.name,
       visible: true
       });
+      initialLocation.marker = marker;
       markers.push(marker);
 
       google.maps.event.addListener(marker, 'click', (function(initialLocation) {
@@ -32,9 +37,9 @@ function initMap(){
         return function() {
           closeAllInfoWindows();
           deselectAll();
+          toggleBounce(initialLocation);
           initialLocation.selected(true);
-          var contentString = '<p><b>' + name + '</b></br><p>Rating: ' + rating + '/10</p>';
-          infowindow.setContent(contentString);
+          infowindow.setContent(contentString(initialLocation));
           infowindow.open(map, this);
           infowindows.push(infowindow);
         };
@@ -62,12 +67,19 @@ var closeAllInfoWindows = function () {
       closeAllInfoWindows();
 
 //deselect all items
-deselectAll = function() {
+var deselectAll = function() {
   //this code unselects the previous items
   for (var i = 0; i < locationsList().length; i++){
     var item = self.locationsList()[i];
     item.selected(false);
   };
+}
+
+var toggleBounce = function(place) { 
+  for (var i = 0; i < locationsList().length; i++){
+    locationsList()[i].marker.setAnimation(null);
+  };
+  place.marker.setAnimation(google.maps.Animation.BOUNCE);
 }
 
 var initialLocations = [
@@ -103,22 +115,8 @@ var initialLocations = [
   }
 ]
 
-/*
-//Wikipedia AJAX request
+var Location = function(data) {
 
-var wikiUrl = "https://en.wikipedia.org/w/api.php?action=opensearch&search=detroit&format=json&callback=wikiCallback";
-
-$.ajax({
-  url: wikiUrl,
-  dataType: 'jsonp',
-  }).done(function(data){
-    initialOptions.wikipediaApiData = data;
-  });
-*/
-
-var Location = function(data, comingFrom) {
-
-  this.source = comingFrom;
   this.name = data.name;
   this.location = data.location;
   this.selected = ko.observable(false);
@@ -130,10 +128,11 @@ var ViewModel = function () {
 
 //intial locations information
   initialLocations.forEach(function(data){
-    locationsList.push( (new Location(data, 0)) );
+    locationsList.push( (new Location(data)) );
   });
 
   this.currentLocation = ko.observable( locationsList() );
+  this.currentLocationMarker = ko.observable( markers() );
 
   this.locationChange = function(place) {
 
@@ -146,15 +145,12 @@ var ViewModel = function () {
     var rating = place.rating;
     place.selected(true);
     self.currentLocation(place);
+    self.currentLocationMarker(place.marker);
+    toggleBounce(place);
     //opens info window for the selected location
-    var contentString = '<p><b>' + name + '</b></br><p>Rating: ' + rating + '/10</p>';
-    var infowindow = new google.maps.InfoWindow({
-      content: name,
-      position: location
-    });
     infowindows.push(infowindow);
-    infowindow.setContent(contentString);
-    infowindow.open(map, this.currentLocation);
+    infowindow.setContent(contentString(place));
+    infowindow.open(map, self.currentLocationMarker());
   };
 
 //code to make the filter work
@@ -200,58 +196,11 @@ var ViewModel = function () {
     });
 
     this.test = function() {
-console.log(locationsList()[0].rating);
+console.log(locationsList()[0].marker);
+
     }
 
-//Yelp AJAX stuff
-
-var yelpSearchTerm = ko.observable("");
-var yelpSearchLocation = ko.observable("");
-
-
-/*
-API v2.0
-Consumer Key	N2ke23vHS5X3ZHlqCiTSSA
-Consumer Secret	2UVQ_Kp1txNmCwcZqdej2ZBJCAs
-Token	v8qxg-WjwDmfM931BonIGbaMWyxJaUXZ
-Token Secret	-BUZf7Jbqbi-XSvdrLdakxdLu0g
-*/
-
-this.getYelpData = function() {
-
-  function nonce_generate() {
-    return (Math.floor(Math.random() * 1e12).toString());
-  }
-
-  var parameters = {
-    oauth_consumer_key: 'N2ke23vHS5X3ZHlqCiTSSA',
-    oauth_token: 'v8qxg-WjwDmfM931BonIGbaMWyxJaUXZ',
-    oauth_nonce: nonce_generate(),
-    oauth_timestamp: Math.floor(Date.now()/1000),
-    oauth_signature_method: 'HMAC-SHA1',
-    oauth_version : '1.0',
-    callback: 'cb'
-  }
-
-  var encodedSignature = oauthSignature.generate('GET',yelp_url, parameters, YELP_KEY_SECRET, YELP_TOKEN_SECRET);
-    parameters.oauth_signature = encodedSignature;
-
-  var yelpUrl = "https://api.yelp.com/v2/search?term=food&location=San+Francisco"
-  $.ajax({
-    url: yelpUrl,
-//    url: 'https://api.yelp.com/v2/search?term=' + yelpSearchTerm + '&location=' + yelpSearchLocation + '',
-    dataType: 'jsonp',
-    cache: true,
-    data: parameters
-  }).done(function(data){
-    console.log(data);
-  }).fail(function(){
-    $('#yelp-header').text("Yelp results could not be loaded :(");
-  });
-}
-
-
-//Foursquare AJAX request
+//Foursquare AJAX request and add venue rating to infowindow
   locationsList().forEach(function(item){
     $.ajax({
       url: 'https://api.foursquare.com/v2/venues/explore',
@@ -259,24 +208,57 @@ this.getYelpData = function() {
       data: 'limit=1&ll='+item.location.lat+','+item.location.lng+ '&query=' + item.name +'&client_id=B3Q0KONKTC0PX2F52YNXPOIYYCEN4AH23UNDTNGEYDBJ522S&client_secret=LY2WFGMIRHO5Q2T4XVOCGOZMOFO5NFVBTEOI4WIWBYUCU3O2&v=20160616',
       async: true}).done(function(data) {
         item.rating = data.response.groups[0].items[0].venue.rating;
+    }).fail(function(){
+      item.rating = "foursquare data failed to load";
     });
   })
-/*
-this.foursquareSearchTerm = ko.observable("");
-this.foursquareSearchLocation = ko.observable("");
-var foursquareSearchTerm = this.foursquareSearchTerm();
-var foursquareSearchLocation = this.foursquareSearchLocation();
 
-this.getFoursquareData = function(foursquareSearchTerm, foursquareSearchLocation) {
-  console.log(foursquareSearchTerm);
+
+
+  //Wikipedia AJAX request
+
+locationsList().forEach(function(item){
+  var wikiUrl = 'https://en.wikipedia.org/w/api.php?action=opensearch&search=' + item.name + '&format=json&callback=wikiCallback';
   $.ajax({
-    url: 'https://api.foursquare.com/v2/venues/search?query=' + foursquareSearchTerm + '&near=' + foursquareSearchLocation + '&client_id=B3Q0KONKTC0PX2F52YNXPOIYYCEN4AH23UNDTNGEYDBJ522S&client_secret=LY2WFGMIRHO5Q2T4XVOCGOZMOFO5NFVBTEOI4WIWBYUCU3O2&v=20160616'
+    url: wikiUrl,
+    dataType: 'jsonp',
+    }).done(function(data){
+      if (data[3].length = 1){
+        data[3] = data[3];
+        item.wikiLink = '<a href=' + data[3] + '>' + item.name + '</a>';
+      } else if (data[3].length = 0){
+        item.wikiLink = "Wikipedia link could not be loaded";
+      } else if (data[3].length > 1) {
+        data[3] = data[3][1];
+        item.wikiLink = '<a href=' + data[3] + '>' + item.name + '</a>';
+      };
+  //    item.description = data[2]
+    }).fail(function(){
+      item.wikiLink = "Wikipedia link could not be loaded";
+    });
+})
+
+//Flickr API stuff
+/*
+Detroit Map
+Key:
+8bef3d00f541acb443ae9e5caba6123a
+
+Secret:
+93ea6962ac8ed600
+*/
+locationsList().forEach(function(item){
+  var flickerAPI = "http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?";
+  $.getJSON( flickerAPI, {
+    tags: item.name,
+    tagmode: "any",
+    format: 'json'
   }).done(function(data){
-    console.log(data);
-  }).fail(function(){
-    $('#foursquare-header').text("Fourquare results could not be loaded :(")
-  })
-}*/
+    var recentPhotoLink = data.items[0].media.m
+    item.photo = '<img src=' + recentPhotoLink + ' alt=' + item.name + '>';
+  });
+})
+
 
 }
 ko.applyBindings(new ViewModel());
