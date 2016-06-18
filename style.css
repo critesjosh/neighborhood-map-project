@@ -8,9 +8,6 @@ html, body {
 button {
   border: 1px black;
 }
-ul {
-  padding-left: none;
-}
 
 li {
   padding: 0.5em;

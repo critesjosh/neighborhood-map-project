@@ -1,87 +1,4 @@
-//Model
-
-var map;
-var detroit = {lat: 42.3314, lng: -83.0458};
-var infowindow;
-var infowindows = [];
-var markers = ko.observableArray([]);
-var locationsList = ko.observableArray([]);
-var contentString = function(data){
-  return '<p><b>' + data.name + '</b></br><p>Rating: ' + data.rating + '/10</br>from foursquare.com</p>' +
-'Wikipedia Info: ' + data.wikiLink + '</br></br>Flickr Photo:</br>' + data.photo;
-}
-
-function initMap(){
-    map = new google.maps.Map(document.getElementById("map"), {
-      center: detroit,
-      zoom: 12});
-
-  infowindow = new google.maps.InfoWindow();
-
-  function createMarker() {
-    for (var i = 0; i < locationsList().length; i++ ){
-      var initialLocation = locationsList()[i];
-      var placeLoc = initialLocation.location;
-      var marker = new google.maps.Marker({
-      map: map,
-      position: placeLoc,
-      title: initialLocation.name,
-      visible: true
-      });
-      initialLocation.marker = marker;
-      markers.push(marker);
-
-      google.maps.event.addListener(marker, 'click', (function(initialLocation) {
-        var name = initialLocation.name;
-        var rating = initialLocation.rating;
-        return function() {
-          closeAllInfoWindows();
-          deselectAll();
-          toggleBounce(initialLocation);
-          initialLocation.selected(true);
-          infowindow.setContent(contentString(initialLocation));
-          infowindow.open(map, this);
-          infowindows.push(infowindow);
-        };
-      })(initialLocation));
-
-        };
-      };
-
-    createMarker();
-  }
-
-var stringStartsWith = function (string, startsWith) {
-    string = string || "";
-    if (startsWith.length > string.length)
-        return false;
-        return string.substring(0, startsWith.length) === startsWith;
-      };
-
-//closes all info windows
-var closeAllInfoWindows = function () {
-    for (var i = 0; i < infowindows.length; i++){
-      infowindows[i].close();
-        };
-      };
-      closeAllInfoWindows();
-
-//deselect all items
-var deselectAll = function() {
-  //this code unselects the previous items
-  for (var i = 0; i < locationsList().length; i++){
-    var item = self.locationsList()[i];
-    item.selected(false);
-  };
-}
-
-var toggleBounce = function(place) { 
-  for (var i = 0; i < locationsList().length; i++){
-    locationsList()[i].marker.setAnimation(null);
-  };
-  place.marker.setAnimation(google.maps.Animation.BOUNCE);
-}
-
+//list of locations to initially appear on the map
 var initialLocations = [
   {
     name: 'Belle Isle',
@@ -113,38 +30,109 @@ var initialLocations = [
     source: 'initial',
     visible: 'true'
   }
-]
+];
 
+var map;
+var detroit = {lat: 42.3314, lng: -83.0458};
+var infowindow;
+var infowindows = [];
+var markers = ko.observableArray([]);
+var locationsList = ko.observableArray([]);
+var contentString = function(data){
+  return '<p><b>' + data.name + '</b></br><p>Rating: ' + data.rating + '/10</br>from foursquare.com</p>' +
+    'Wikipedia Info: ' + data.wikiLink + '</br></br>Flickr Photo:</br>' + data.photo;
+  };
+
+//call the function to initialize the google map
+function initMap(){
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: detroit,
+      zoom: 12});
+
+    infowindow = new google.maps.InfoWindow();
+  //creates markers for all of the locations
+  function createMarker() {
+    for (var i = 0; i < locationsList().length; i++ ){
+      var initialLocation = locationsList()[i];
+      var placeLoc = initialLocation.location;
+      var marker = new google.maps.Marker({
+        map: map,
+        position: placeLoc,
+        title: initialLocation.name,
+        visible: true
+        });
+      initialLocation.marker = marker;
+      markers.push(marker);
+      //add event listeners to the markers to open the relevant infowindow
+      google.maps.event.addListener(marker, 'click', (function(initialLocation) {
+        return function() {
+          closeAllInfoWindows();
+          deselectAll();
+          toggleBounce(initialLocation);
+          initialLocation.selected(true);
+          infowindow.setContent(contentString(initialLocation));
+          infowindow.open(map, this);
+          infowindows.push(infowindow);
+        };
+      })(initialLocation));
+    }
+  }
+    createMarker();
+}
+//this function is used to filter the locationsList
+var stringStartsWith = function (string, startsWith) {
+    string = string || "";
+    if (startsWith.length > string.length)
+        return false;
+        return string.substring(0, startsWith.length) === startsWith;
+    };
+
+//closes all info windows
+var closeAllInfoWindows = function () {
+    for (var i = 0; i < infowindows.length; i++){
+      infowindows[i].close();
+      }
+    };
+
+//deselect all items
+var deselectAll = function() {
+  //this code unselects the previous items
+  for (var i = 0; i < locationsList().length; i++){
+    var item = locationsList()[i];
+    item.selected(false);
+    }
+  };
+
+//turns off the bounce animation for all of the markers on the map
+var toggleBounce = function(place) {
+  for (var i = 0; i < locationsList().length; i++){
+    locationsList()[i].marker.setAnimation(null);
+  }
+  place.marker.setAnimation(google.maps.Animation.BOUNCE);
+};
+
+//class information for adding Locations to the locationList
 var Location = function(data) {
-
   this.name = data.name;
   this.location = data.location;
   this.selected = ko.observable(false);
-}
+};
 
 var ViewModel = function () {
-
   var self = this;
-
 //intial locations information
   initialLocations.forEach(function(data){
     locationsList.push( (new Location(data)) );
   });
 
-  this.currentLocation = ko.observable( locationsList() );
   this.currentLocationMarker = ko.observable( markers() );
 
   this.locationChange = function(place) {
 
     deselectAll();
-
     closeAllInfoWindows();
 
-    var name = place.name;
-    var location = place.location;
-    var rating = place.rating;
     place.selected(true);
-    self.currentLocation(place);
     self.currentLocationMarker(place.marker);
     toggleBounce(place);
     //opens info window for the selected location
@@ -156,51 +144,47 @@ var ViewModel = function () {
 //code to make the filter work
   //this reads the text in the box
   this.filter = ko.observable("");
-
   this.filteredItems = ko.computed( function() {
-    //this code read the filter box and filters the list
+    //this code reads the filter box text and filters the list and returns a list
+    //of locations matching the filter box text
     var filter = self.filter().toLowerCase();
-    deselectAll()
+    deselectAll();
     if (!filter) {
       return locationsList();
     } else {
       var filtered = ko.utils.arrayFilter(locationsList(), function(item){
         return stringStartsWith(item.name.toLowerCase(), filter);
-      });
-      return filtered;
-    };
+        });
+        return filtered;
+      }
   });
 
-  //this function is called as the filter textbox is updated to update the markers
+  //this function is called as the filter textbox is updated so the markers match
   this.filteredMarkers = ko.computed(function() {
-      var filter = self.filter().toLowerCase();
-        if (!filter) {
-          //if there is no filter, then return the whole list
-          return markers();
-        } else {
-          return ko.utils.arrayFilter(markers(), function(item) {
-             return stringStartsWith(item.title.toLowerCase(), filter);
-               });
-              };
-    });
-
-    //turns off markers not being filtered, turns on markers that return true
-    this.displayMarkers = ko.computed(function() {
-      closeAllInfoWindows();
-      for( i = 0; i < markers().length; i++){
-        markers()[i].setVisible(false);
-      };
-      for( i = 0; i < self.filteredMarkers().length; i++){
-        self.filteredMarkers()[i].setVisible(true);
-      }
-    });
-
-    this.test = function() {
-console.log(locationsList()[0].marker);
-
+    var filter = self.filter().toLowerCase();
+    if (!filter) {
+      //if there is no filter, then return the whole list
+      return markers();
+    } else {
+      return ko.utils.arrayFilter(markers(), function(item) {
+        return stringStartsWith(item.title.toLowerCase(), filter);
+      });
     }
+  });
 
-//Foursquare AJAX request and add venue rating to infowindow
+  //turns off markers not being filtered, turns on markers that return true
+  this.displayMarkers = ko.computed(function() {
+    closeAllInfoWindows();
+    for( var i = 0; i < markers().length; i++){
+      markers()[i].setVisible(false);
+    }
+    for( i = 0; i < self.filteredMarkers().length; i++){
+      self.filteredMarkers()[i].setVisible(true);
+    }
+  });
+
+//Foursquare AJAX request and add venue to the location information to add
+// a rating to the infowindow
   locationsList().forEach(function(item){
     $.ajax({
       url: 'https://api.foursquare.com/v2/venues/explore',
@@ -211,34 +195,30 @@ console.log(locationsList()[0].marker);
     }).fail(function(){
       item.rating = "foursquare data failed to load";
     });
-  })
+  });
 
-
-
-  //Wikipedia AJAX request
-
-locationsList().forEach(function(item){
-  var wikiUrl = 'https://en.wikipedia.org/w/api.php?action=opensearch&search=' + item.name + '&format=json&callback=wikiCallback';
-  $.ajax({
-    url: wikiUrl,
-    dataType: 'jsonp',
-    }).done(function(data){
-      if (data[3].length = 1){
-        data[3] = data[3];
-        item.wikiLink = '<a href=' + data[3] + '>' + item.name + '</a>';
-      } else if (data[3].length = 0){
+//Wikipedia AJAX request
+  locationsList().forEach(function(item){
+    var wikiUrl = 'https://en.wikipedia.org/w/api.php?action=opensearch&search=' + item.name + '&format=json&callback=wikiCallback';
+    $.ajax({
+      url: wikiUrl,
+      dataType: 'jsonp',
+      }).done(function(data){
+        if (data[3].length == 1){
+          data[3] = data[3];
+          item.wikiLink = '<a href=' + data[3] + '>' + item.name + '</a>';
+        } else if (data[3].length === 0){
+          item.wikiLink = "Wikipedia link could not be loaded";
+        } else if (data[3].length > 1) {
+          data[3] = data[3][1];
+          item.wikiLink = '<a href=' + data[3] + '>' + item.name + '</a>';
+        }
+      }).fail(function(){
         item.wikiLink = "Wikipedia link could not be loaded";
-      } else if (data[3].length > 1) {
-        data[3] = data[3][1];
-        item.wikiLink = '<a href=' + data[3] + '>' + item.name + '</a>';
-      };
-  //    item.description = data[2]
-    }).fail(function(){
-      item.wikiLink = "Wikipedia link could not be loaded";
+      });
     });
-})
 
-//Flickr API stuff
+//Flickr API function
 /*
 Detroit Map
 Key:
@@ -247,18 +227,17 @@ Key:
 Secret:
 93ea6962ac8ed600
 */
-locationsList().forEach(function(item){
-  var flickerAPI = "http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?";
-  $.getJSON( flickerAPI, {
-    tags: item.name,
-    tagmode: "any",
-    format: 'json'
-  }).done(function(data){
-    var recentPhotoLink = data.items[0].media.m
-    item.photo = '<img src=' + recentPhotoLink + ' alt=' + item.name + '>';
+  locationsList().forEach(function(item){
+    var flickerAPI = "http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?";
+    $.getJSON( flickerAPI, {
+      tags: item.name,
+      tagmode: "any",
+      format: 'json'
+    }).done(function(data){
+      var recentPhotoLink = data.items[0].media.m;
+      item.photo = '<img src=' + recentPhotoLink + ' alt=' + item.name + '>';
+    });
   });
-})
+};
 
-
-}
 ko.applyBindings(new ViewModel());
