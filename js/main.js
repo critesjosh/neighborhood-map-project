@@ -39,7 +39,7 @@ var infowindows = [];
 var markers = ko.observableArray([]);
 var locationsList = ko.observableArray([]);
 var contentString = function(data){
-  return '<p><b>' + data.name + '</b></br><p>Rating: ' + data.rating + '/10</br>from foursquare.com</p>' +
+  return '<p><b>' + data.name + '</b></br><p>Rating: ' + data.rating + '</br>from foursquare.com</p>' +
     'Wikipedia Info: ' + data.wikiLink + '</br></br>Flickr Photo:</br>' + data.photo;
   };
 
@@ -79,13 +79,10 @@ function initMap(){
   }
     createMarker();
 }
-//this function is used to filter the locationsList
-var stringStartsWith = function (string, startsWith) {
-    string = string || "";
-    if (startsWith.length > string.length)
-        return false;
-        return string.substring(0, startsWith.length) === startsWith;
-    };
+// error handling here
+var googleError = function () {
+  $('#map').text("Map could not be loaded");
+};
 
 //closes all info windows
 var closeAllInfoWindows = function () {
@@ -153,8 +150,10 @@ var ViewModel = function () {
       return locationsList();
     } else {
       var filtered = ko.utils.arrayFilter(locationsList(), function(item){
-        return stringStartsWith(item.name.toLowerCase(), filter);
-        });
+        if(item.name.toLowerCase().indexOf(filter) >= 0){
+          return(item);
+        }
+      });
         return filtered;
       }
   });
@@ -167,7 +166,9 @@ var ViewModel = function () {
       return markers();
     } else {
       return ko.utils.arrayFilter(markers(), function(item) {
-        return stringStartsWith(item.title.toLowerCase(), filter);
+        if(item.title.toLowerCase().indexOf(filter) >= 0){
+          return(item);
+        }
       });
     }
   });
@@ -191,11 +192,11 @@ var ViewModel = function () {
       dataType: 'json',
       data: 'limit=1&ll='+item.location.lat+','+item.location.lng+ '&query=' + item.name +'&client_id=B3Q0KONKTC0PX2F52YNXPOIYYCEN4AH23UNDTNGEYDBJ522S&client_secret=LY2WFGMIRHO5Q2T4XVOCGOZMOFO5NFVBTEOI4WIWBYUCU3O2&v=20160616',
       async: true}).done(function(data) {
-        item.rating = data.response.groups[0].items[0].venue.rating;
-    }).fail(function(){
-      item.rating = "foursquare data failed to load";
+        item.rating = data.response.groups[0].items[0].venue.rating + '/10';
+      }).fail(function(){
+        item.rating = "foursquare data failed to load";
+      });
     });
-  });
 
 //Wikipedia AJAX request
   locationsList().forEach(function(item){
@@ -204,15 +205,12 @@ var ViewModel = function () {
       url: wikiUrl,
       dataType: 'jsonp',
       }).done(function(data){
-        if (data[3].length == 1){
-          data[3] = data[3];
+        if (data[3].length >= 1){
+          data[3] = data[3][1];
           item.wikiLink = '<a href=' + data[3] + '>' + item.name + '</a>';
         } else if (data[3].length === 0){
           item.wikiLink = "Wikipedia link could not be loaded";
-        } else if (data[3].length > 1) {
-          data[3] = data[3][1];
-          item.wikiLink = '<a href=' + data[3] + '>' + item.name + '</a>';
-        }
+        } 
       }).fail(function(){
         item.wikiLink = "Wikipedia link could not be loaded";
       });
@@ -236,6 +234,8 @@ Secret:
     }).done(function(data){
       var recentPhotoLink = data.items[0].media.m;
       item.photo = '<img src=' + recentPhotoLink + ' alt=' + item.name + '>';
+    }).fail(function(){
+      item.photo = 'Flickr photo failed to load :('
     });
   });
 };
