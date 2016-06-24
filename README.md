@@ -14,6 +14,9 @@ location. The information can also be accessed by directly clicking on the marke
 on the map. The locations in the list can be filtered using the text input box
 at the top of the list and the markers will be filtered accordingly.
 
+Alternatively, you can [click here](http://dreamcatcherproject.net/josh/neighborhood-map-project/)
+to see it in action.
+
 ###3rd Party APIs
 
 I chose to use several 3rd party APIs in my application. I integrate venue
