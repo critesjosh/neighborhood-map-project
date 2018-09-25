@@ -1,5 +1,7 @@
 #Neighborhood Map of Detroit MI
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/critesjosh/neighborhood-map-project.svg)](https://greenkeeper.io/)
+
 This site is to showcase the interactive potential of a google map connected to
 3rd party APIs. I only hardcoded 5 locations into the application for now, but
 more locations could easily be added to make the map more useful.
